@@ -32,6 +32,9 @@ class JWTController extends Controller
      */
     public function register(Request $request)
     {
+        ini_set ('max_execution_time', 600);
+        ini_set ('memory_limit', '2048M');
+
         $validator = Validator::make($request->all(), [
             'excel_file' => 'required',
         ]);
@@ -49,10 +52,7 @@ class JWTController extends Controller
 
     public function export(Request $request)
     {
-        return Excel::download(
-            new \App\Exports\UsersExport,
-            'users.csv'
-        );
+        return Excel::download(new UsersExport, 'users.csv');
     }
 
     /**
@@ -107,7 +107,7 @@ class JWTController extends Controller
      */
     public function profile()
     {
-        return response()->json(auth()->user());
+        return response()->json(User::all('name', 'email'));
     }
 
     /**

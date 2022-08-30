@@ -4,9 +4,14 @@ namespace App\Http\Controllers;
 
 use Auth;
 use Validator;
+
 use App\Models\User;
+use App\Exports\UsersExport;
+use App\Imports\UsersImport;
+
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Maatwebsite\Excel\Facades\Excel;
 
 class JWTController extends Controller
 {
@@ -17,7 +22,7 @@ class JWTController extends Controller
      */
     public function __construct()
     {
-        $this->middleware('auth:api', ['except' => ['login', 'register']]);
+        $this->middleware('auth:api', ['except' => ['login', 'register', 'export']]);
     }
 
     /**
@@ -28,25 +33,26 @@ class JWTController extends Controller
     public function register(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'name' => 'required|string|min:2|max:100',
-            'email' => 'required|string|email|max:100|unique:users',
-            'password' => 'required|string|confirmed|min:6',
+            'excel_file' => 'required',
         ]);
 
-        if($validator->fails()) {
+        if ($validator->fails()) {
             return response()->json($validator->errors(), 400);
         }
 
-        $user = User::create([
-                'name' => $request->name,
-                'email' => $request->email,
-                'password' => Hash::make($request->password)
-            ]);
+        Excel::import(new UsersImport, $request->file('excel_file'));
 
         return response()->json([
-            'message' => 'User successfully registered',
-            'user' => $user
+            'message' => 'User Import successfully',
         ], 201);
+    }
+
+    public function export(Request $request)
+    {
+        return Excel::download(
+            new \App\Exports\UsersExport,
+            'users.csv'
+        );
     }
 
     /**
